@@ -40,7 +40,12 @@
                     <label>Пассажиры</label>
                     <input type="number" id="passengers" value="1" min="1" max="9" />
                 </div>
-                <button onclick="searchFlights()" class="btn-primary">Найти рейсы</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button onclick="searchFlights()" class="btn-primary">Найти рейсы</button>
+                    <button onclick="showAllFlights()" class="btn-primary" style="background:#4caf50;">
+                        Показать все рейсы
+                    </button>
+                </div>
             </div>
 
             <div id="searchResults"></div>
