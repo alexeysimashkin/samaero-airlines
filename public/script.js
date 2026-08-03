@@ -1,15 +1,131 @@
 let selectedFlight = null;
+let geoChecked = false;
+
+// ========== ГЕОЛОКАЦИЯ И БЛОКИРОВКА VPN ==========
+
+// Запрос геолокации при загрузке
+window.onload = function() {
+    // Показываем экран запроса геолокации
+    document.getElementById('geoCheckScreen').style.display = 'flex';
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('vpnBlockScreen').style.display = 'none';
+    
+    // Автоматически запрашиваем геолокацию
+    requestGeolocation();
+};
+
+function requestGeolocation() {
+    if (!navigator.geolocation) {
+        alert('Ваш браузер не поддерживает геолокацию. Используйте современный браузер.');
+        return;
+    }
+
+    // Показываем статус загрузки
+    const btn = document.querySelector('#geoCheckScreen .btn-primary');
+    if (btn) {
+        btn.textContent = '⏳ Определение местоположения...';
+        btn.disabled = true;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        // Успешно получили геолокацию
+        async function(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            console.log('📍 Геолокация получена:', lat, lon);
+            
+            // Проверяем страну через API
+            await checkCountry(lat, lon);
+        },
+        // Ошибка - пользователь отказал или не получилось
+        function(error) {
+            console.error('❌ Ошибка геолокации:', error);
+            
+            // Если пользователь явно отказал
+            if (error.code === 1) {
+                document.querySelector('#geoCheckScreen .btn-primary').textContent = '🌍 Разрешить геолокацию';
+                document.querySelector('#geoCheckScreen .btn-primary').disabled = false;
+                alert('Для доступа к сайту необходимо разрешить геолокацию. Пожалуйста, разрешите доступ и нажмите кнопку снова.');
+            } else {
+                // Другие ошибки (таймаут, недоступность)
+                alert('Не удалось определить местоположение. Проверьте интернет-соединение и попробуйте снова.');
+                document.querySelector('#geoCheckScreen .btn-primary').textContent = '🔄 Попробовать снова';
+                document.querySelector('#geoCheckScreen .btn-primary').disabled = false;
+            }
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
+
+// Проверка страны по координатам
+async function checkCountry(lat, lon) {
+    try {
+        // Используем бесплатный API для определения страны по координатам
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+        const data = await response.json();
+        
+        console.log('📍 Данные геолокации:', data);
+        
+        // Получаем код страны
+        const countryCode = data?.address?.country_code?.toUpperCase() || '';
+        console.log('🌍 Код страны:', countryCode);
+        
+        // Разрешенные страны: Россия (RU) и Беларусь (BY)
+        const allowedCountries = ['RU', 'BY'];
+        
+        if (allowedCountries.includes(countryCode)) {
+            // Пользователь из России или Беларуси - пускаем
+            console.log('✅ Доступ разрешен. Страна:', countryCode);
+            showMainContent();
+        } else {
+            // Пользователь не из России или Беларуси - блокируем
+            console.log('❌ Доступ запрещен. Страна:', countryCode);
+            showVpnBlock();
+        }
+    } catch (error) {
+        console.error('❌ Ошибка при проверке страны:', error);
+        // В случае ошибки API - показываем блокировку (безопасный подход)
+        showVpnBlock();
+    }
+}
+
+// Показать основной контент
+function showMainContent() {
+    document.getElementById('geoCheckScreen').style.display = 'none';
+    document.getElementById('vpnBlockScreen').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    geoChecked = true;
+    
+    // Инициализация
+    showSearch();
+}
+
+// Показать экран блокировки VPN
+function showVpnBlock() {
+    document.getElementById('geoCheckScreen').style.display = 'none';
+    document.getElementById('vpnBlockScreen').style.display = 'flex';
+    document.getElementById('mainContent').style.display = 'none';
+}
+
+// ========== ОСНОВНОЙ ФУНКЦИОНАЛ ==========
 
 // Переключение секций
 function showSearch() {
+    if (!geoChecked) return;
     setActiveTab('searchSection');
 }
 
 function showBooking() {
+    if (!geoChecked) return;
     setActiveTab('bookingSection');
 }
 
 function showAdmin() {
+    if (!geoChecked) return;
     setActiveTab('adminSection');
 }
 
@@ -22,8 +138,10 @@ function setActiveTab(id) {
     else if (id === 'adminSection') document.querySelector('nav button:nth-child(3)').classList.add('active');
 }
 
-// Поиск рейсов (исправленная версия с правильным отображением времени)
+// Поиск рейсов
 async function searchFlights() {
+    if (!geoChecked) return;
+    
     const origin = document.getElementById('origin').value.trim();
     const destination = document.getElementById('destination').value.trim();
     const date = document.getElementById('flightDate').value;
@@ -85,8 +203,10 @@ async function searchFlights() {
     }
 }
 
-// Показать все рейсы (исправленная версия)
+// Показать все рейсы
 async function showAllFlights() {
+    if (!geoChecked) return;
+    
     try {
         const response = await fetch('/api/flights');
         const flights = await response.json();
@@ -123,8 +243,10 @@ async function showAllFlights() {
     }
 }
 
-// Открыть бронирование (исправленная версия)
+// Открыть бронирование
 function openBooking(flightId) {
+    if (!geoChecked) return;
+    
     fetch(`/api/flights`)
         .then(res => res.json())
         .then(flights => {
@@ -201,6 +323,8 @@ function openBooking(flightId) {
 
 // Процесс оплаты
 async function processPayment() {
+    if (!geoChecked) return;
+    
     const tariffSelect = document.getElementById('tariffSelect');
     const tariff = tariffSelect.value;
     let price;
@@ -265,8 +389,10 @@ async function processPayment() {
     }
 }
 
-// Получить бронирование по коду (исправленная версия)
+// Получить бронирование по коду
 async function getBooking() {
+    if (!geoChecked) return;
+    
     const code = document.getElementById('bookingCode').value.trim().toUpperCase();
     if (!code) {
         alert('Введите код бронирования');
@@ -361,6 +487,3 @@ document.getElementById('flightForm').addEventListener('submit', async function(
         console.error(error);
     }
 });
-
-// Инициализация - показать поиск
-showSearch();
