@@ -7,149 +7,185 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <div class="logo">
-            <h1>✈ SamAero</h1>
-            <span>летай с комфортом</span>
+    <!-- Блок проверки геолокации (показывается первым) -->
+    <div id="geoCheckScreen" style="display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f0f9f0;flex-direction:column;padding:2rem;">
+        <div style="background:white;padding:3rem;border-radius:20px;max-width:500px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.1);">
+            <h1 style="color:#2e7d32;font-size:2.5rem;">✈ SamAero</h1>
+            <p style="font-size:1.2rem;color:#555;margin:1.5rem 0;">Для доступа к сайту необходимо разрешить определение местоположения</p>
+            <button onclick="requestGeolocation()" class="btn-primary" style="font-size:1.2rem;padding:1rem 3rem;">
+                🌍 Разрешить геолокацию
+            </button>
+            <p style="color:#888;font-size:0.9rem;margin-top:1rem;">Ваше местоположение используется только для проверки региона</p>
         </div>
-        <nav>
-            <button onclick="showSearch()" class="active">Поиск билетов</button>
-            <button onclick="showBooking()">Мой заказ</button>
-            <button onclick="showAdmin()">Админ панель</button>
-        </nav>
-    </header>
+    </div>
 
-    <main>
-        <!-- Поиск билетов -->
-        <section id="searchSection" class="active">
-            <h2>Поиск авиабилетов</h2>
-            <div class="search-form">
-                <div class="form-group">
-                    <label>Откуда</label>
-                    <input type="text" id="origin" placeholder="Город или код IATA" />
-                </div>
-                <div class="form-group">
-                    <label>Куда</label>
-                    <input type="text" id="destination" placeholder="Город или код IATA" />
-                </div>
-                <div class="form-group">
-                    <label>Дата вылета</label>
-                    <input type="date" id="flightDate" />
-                </div>
-                <div class="form-group">
-                    <label>Пассажиры</label>
-                    <input type="number" id="passengers" value="1" min="1" max="9" />
-                </div>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <button onclick="searchFlights()" class="btn-primary">Найти рейсы</button>
-                    <button onclick="showAllFlights()" class="btn-primary" style="background:#4caf50;">
-                        Показать все рейсы
-                    </button>
-                </div>
+    <!-- Блок блокировки по VPN -->
+    <div id="vpnBlockScreen" style="display:none;justify-content:center;align-items:center;min-height:100vh;background:#f0f9f0;flex-direction:column;padding:2rem;">
+        <div style="background:white;padding:3rem;border-radius:20px;max-width:500px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.1);">
+            <div style="font-size:5rem;margin-bottom:1rem;">🚫</div>
+            <h1 style="color:#d32f2f;font-size:2rem;">VPN обнаружен!</h1>
+            <div style="font-size:4rem;margin:1rem 0;">❌</div>
+            <h2 style="color:#d32f2f;font-size:1.5rem;">Для работы сайта выключите VPN</h2>
+            <p style="color:#555;margin:1.5rem 0;font-size:1.1rem;">
+                Доступ к сайту разрешен только из России и Беларуси.<br>
+                Пожалуйста, отключите VPN и обновите страницу.
+            </p>
+            <button onclick="location.reload()" class="btn-primary" style="background:#d32f2f;">
+                🔄 Обновить страницу
+            </button>
+        </div>
+    </div>
+
+    <!-- Основной контент (скрыт до проверки) -->
+    <div id="mainContent" style="display:none;">
+        <header>
+            <div class="logo">
+                <h1>✈ SamAero</h1>
+                <span>летай с комфортом</span>
             </div>
+            <nav>
+                <button onclick="showSearch()" class="active">Поиск билетов</button>
+                <button onclick="showBooking()">Мой заказ</button>
+                <button onclick="showAdmin()">Админ панель</button>
+            </nav>
+        </header>
 
-            <div id="searchResults"></div>
-        </section>
+        <main>
+            <!-- Поиск билетов -->
+            <section id="searchSection" class="active">
+                <h2>Поиск авиабилетов</h2>
+                <div class="search-form">
+                    <div class="form-group">
+                        <label>Откуда</label>
+                        <input type="text" id="origin" placeholder="Город или код IATA" />
+                    </div>
+                    <div class="form-group">
+                        <label>Куда</label>
+                        <input type="text" id="destination" placeholder="Город или код IATA" />
+                    </div>
+                    <div class="form-group">
+                        <label>Дата вылета</label>
+                        <input type="date" id="flightDate" />
+                    </div>
+                    <div class="form-group">
+                        <label>Пассажиры</label>
+                        <input type="number" id="passengers" value="1" min="1" max="9" />
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button onclick="searchFlights()" class="btn-primary">Найти рейсы</button>
+                        <button onclick="showAllFlights()" class="btn-primary" style="background:#4caf50;">
+                            Показать все рейсы
+                        </button>
+                    </div>
+                </div>
 
-        <!-- Мой заказ -->
-        <section id="bookingSection">
-            <h2>Мой заказ</h2>
-            <div class="booking-form">
-                <div class="form-group">
-                    <label>Код бронирования</label>
-                    <input type="text" id="bookingCode" placeholder="Например: AB3C7D" />
-                </div>
-                <button onclick="getBooking()" class="btn-primary">Найти заказ</button>
-            </div>
-            <div id="bookingDetails"></div>
-        </section>
+                <div id="searchResults"></div>
+            </section>
 
-        <!-- Админ панель -->
-        <section id="adminSection">
-            <h2>Админ панель - Добавление рейса</h2>
-            <form id="flightForm" class="admin-form">
-                <div class="form-row">
+            <!-- Мой заказ -->
+            <section id="bookingSection">
+                <h2>Мой заказ</h2>
+                <div class="booking-form">
                     <div class="form-group">
-                        <label>Номер рейса</label>
-                        <input type="text" id="flightNumber" required />
+                        <label>Код бронирования</label>
+                        <input type="text" id="bookingCode" placeholder="Например: AB3C7D" />
                     </div>
-                    <div class="form-group">
-                        <label>Откуда (город)</label>
-                        <input type="text" id="originCity" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Код IATA (откуда)</label>
-                        <input type="text" id="originCode" maxlength="3" required />
-                    </div>
+                    <button onclick="getBooking()" class="btn-primary">Найти заказ</button>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Куда (город)</label>
-                        <input type="text" id="destCity" required />
+                <div id="bookingDetails"></div>
+            </section>
+
+            <!-- Админ панель -->
+            <section id="adminSection">
+                <h2>Админ панель - Добавление рейса</h2>
+                <form id="flightForm" class="admin-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Номер рейса</label>
+                            <input type="text" id="flightNumber" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Откуда (город)</label>
+                            <input type="text" id="originCity" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Код IATA (откуда)</label>
+                            <input type="text" id="originCode" maxlength="3" required />
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Код IATA (куда)</label>
-                        <input type="text" id="destCode" maxlength="3" required />
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Куда (город)</label>
+                            <input type="text" id="destCity" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Код IATA (куда)</label>
+                            <input type="text" id="destCode" maxlength="3" required />
+                        </div>
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Время вылета</label>
-                        <input type="datetime-local" id="departureTime" required />
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Время вылета</label>
+                            <input type="datetime-local" id="departureTime" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Время прилета</label>
+                            <input type="datetime-local" id="arrivalTime" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Время в полете</label>
+                            <input type="text" id="flightDuration" placeholder="2ч 30м" required />
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Время прилета</label>
-                        <input type="datetime-local" id="arrivalTime" required />
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Действует с</label>
+                            <input type="date" id="startDate" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Действует по</label>
+                            <input type="date" id="endDate" required />
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Время в полете</label>
-                        <input type="text" id="flightDuration" placeholder="2ч 30м" required />
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Дни недели</label>
+                            <select id="daysOfWeek" multiple required>
+                                <option value="MON">ПН</option>
+                                <option value="TUE">ВТ</option>
+                                <option value="WED">СР</option>
+                                <option value="THU">ЧТ</option>
+                                <option value="FRI">ПТ</option>
+                                <option value="SAT">СБ</option>
+                                <option value="SUN">ВС</option>
+                            </select>
+                            <small>Зажмите Ctrl для выбора нескольких</small>
+                        </div>
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Действует с</label>
-                        <input type="date" id="startDate" required />
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Минимальный тариф (₽)</label>
+                            <input type="number" id="priceMin" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Увеличенный тариф (₽)</label>
+                            <input type="number" id="priceMedium" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Максимальный тариф (₽)</label>
+                            <input type="number" id="priceMax" required />
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Действует по</label>
-                        <input type="date" id="endDate" required />
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Дни недели</label>
-                        <select id="daysOfWeek" multiple required>
-                            <option value="MON">ПН</option>
-                            <option value="TUE">ВТ</option>
-                            <option value="WED">СР</option>
-                            <option value="THU">ЧТ</option>
-                            <option value="FRI">ПТ</option>
-                            <option value="SAT">СБ</option>
-                            <option value="SUN">ВС</option>
-                        </select>
-                        <small>Зажмите Ctrl для выбора нескольких</small>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Минимальный тариф (₽)</label>
-                        <input type="number" id="priceMin" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Увеличенный тариф (₽)</label>
-                        <input type="number" id="priceMedium" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Максимальный тариф (₽)</label>
-                        <input type="number" id="priceMax" required />
-                    </div>
-                </div>
-                <button type="submit" class="btn-primary">Добавить рейс</button>
-            </form>
-            <div id="adminResult"></div>
-        </section>
-    </main>
+                    <button type="submit" class="btn-primary">Добавить рейс</button>
+                </form>
+                <div id="adminResult"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>© 2026 SamAero. Все права защищены.</p>
+        </footer>
+    </div>
 
     <!-- Модальное окно бронирования -->
     <div id="bookingModal" class="modal">
@@ -159,10 +195,6 @@
             <div id="bookingModalContent"></div>
         </div>
     </div>
-
-    <footer>
-        <p>© 2026 SamAero. Все права защищены.</p>
-    </footer>
 
     <script src="script.js"></script>
 </body>
