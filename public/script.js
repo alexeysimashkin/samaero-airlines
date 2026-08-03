@@ -29,6 +29,8 @@ async function searchFlights() {
     const date = document.getElementById('flightDate').value;
     const passengers = document.getElementById('passengers').value;
 
+    console.log('Searching flights with:', { origin, destination, date, passengers });
+
     if (!origin || !destination || !date) {
         alert('Пожалуйста, заполните все поля поиска');
         return;
@@ -38,10 +40,20 @@ async function searchFlights() {
         const params = new URLSearchParams({ origin, destination, date, passengers });
         const response = await fetch(`/api/flights/search?${params}`);
         const flights = await response.json();
+        
+        console.log('Found flights:', flights);
 
         const resultsDiv = document.getElementById('searchResults');
-        if (flights.length === 0) {
-            resultsDiv.innerHTML = '<p style="text-align:center;color:#888;">Рейсов не найдено</p>';
+        if (!flights || flights.length === 0) {
+            resultsDiv.innerHTML = `
+                <div style="text-align:center;padding:2rem;background:#fff3e0;border-radius:12px;border:2px solid #ff9800;">
+                    <p style="font-size:1.2rem;">😕 Рейсов не найдено</p>
+                    <p style="color:#888;font-size:0.9rem;">Попробуйте изменить параметры поиска</p>
+                    <button onclick="showAllFlights()" class="btn-primary" style="margin-top:1rem;">
+                        Показать все рейсы
+                    </button>
+                </div>
+            `;
             return;
         }
 
@@ -67,8 +79,46 @@ async function searchFlights() {
             </div>
         `).join('');
     } catch (error) {
+        console.error('Search error:', error);
         alert('Ошибка при поиске рейсов');
-        console.error(error);
+    }
+}
+
+// Показать все рейсы
+async function showAllFlights() {
+    try {
+        const response = await fetch('/api/flights');
+        const flights = await response.json();
+        const resultsDiv = document.getElementById('searchResults');
+        
+        if (flights.length === 0) {
+            resultsDiv.innerHTML = '<p style="text-align:center;color:#888;">Нет добавленных рейсов</p>';
+            return;
+        }
+        
+        resultsDiv.innerHTML = flights.map(flight => `
+            <div class="flight-card">
+                <div class="route">
+                    ${flight.origin} (${flight.origin_code}) 
+                    <span>→</span> 
+                    ${flight.destination} (${flight.destination_code})
+                </div>
+                <div class="details">
+                    <span>🛫 ${new Date(flight.departure_time).toLocaleString()}</span>
+                    <span>🛬 ${new Date(flight.arrival_time).toLocaleString()}</span>
+                    <span>⏱ ${flight.flight_duration}</span>
+                    <span>✈ ${flight.flight_number}</span>
+                </div>
+                <div class="prices">
+                    <span class="price-tag">Минимальный: ${flight.price_min}₽</span>
+                    <span class="price-tag">Увеличенный: ${flight.price_medium}₽</span>
+                    <span class="price-tag">Максимум: ${flight.price_max}₽</span>
+                </div>
+                <button class="btn-book" onclick="openBooking(${flight.id})">Выбрать</button>
+            </div>
+        `).join('');
+    } catch (error) {
+        alert('Ошибка при загрузке рейсов');
     }
 }
 
@@ -170,7 +220,6 @@ async function processPayment() {
         contact_email: document.getElementById('pEmail').value.trim()
     };
 
-    // Проверка заполнения
     if (!passengerData.passenger_lastname || !passengerData.passenger_firstname || 
         !passengerData.passenger_birthdate || !passengerData.contact_phone || 
         !passengerData.contact_email) {
@@ -178,7 +227,6 @@ async function processPayment() {
         return;
     }
 
-    // Имитация загрузки
     const modalContent = document.getElementById('bookingModalContent');
     modalContent.innerHTML = '<div style="text-align:center;padding:2rem;"><h3>⏳ Обработка платежа...</h3></div>';
 
