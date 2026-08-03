@@ -93,28 +93,40 @@ app.get('/api/flights/search', async (req, res) => {
   try {
     let query = 'SELECT * FROM flights WHERE 1=1';
     const params = [];
+    let paramIndex = 1;
     
     if (origin) {
       params.push(`%${origin}%`);
-      query += ` AND (origin ILIKE $${params.length} OR origin_code ILIKE $${params.length})`;
+      query += ` AND (origin ILIKE $${paramIndex} OR origin_code ILIKE $${paramIndex})`;
+      paramIndex++;
     }
+    
     if (destination) {
       params.push(`%${destination}%`);
-      query += ` AND (destination ILIKE $${params.length} OR destination_code ILIKE $${params.length})`;
+      query += ` AND (destination ILIKE $${paramIndex} OR destination_code ILIKE $${paramIndex})`;
+      paramIndex++;
     }
+    
     if (date) {
       params.push(date);
-      query += ` AND DATE(departure_time) = $${params.length}`;
+      query += ` AND DATE(departure_time) = $${paramIndex}`;
+      paramIndex++;
     }
+    
+    query += ' ORDER BY departure_time';
+    
+    console.log('SQL Query:', query);
+    console.log('Params:', params);
     
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
+    console.error('Search error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// API: Добавить рейс (для админа)
+// API: Добавить рейс
 app.post('/api/flights', async (req, res) => {
   const {
     flight_number, origin, origin_code, destination, destination_code,
