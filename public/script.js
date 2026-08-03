@@ -22,7 +22,7 @@ function setActiveTab(id) {
     else if (id === 'adminSection') document.querySelector('nav button:nth-child(3)').classList.add('active');
 }
 
-// Поиск рейсов
+// Поиск рейсов (исправленная версия с правильным отображением времени)
 async function searchFlights() {
     const origin = document.getElementById('origin').value.trim();
     const destination = document.getElementById('destination').value.trim();
@@ -57,7 +57,8 @@ async function searchFlights() {
             return;
         }
 
-        resultsDiv.innerHTML = flights.map(flight => `
+        resultsDiv.innerHTML = flights.map(flight => {
+            return `
             <div class="flight-card">
                 <div class="route">
                     ${flight.origin} (${flight.origin_code}) 
@@ -65,8 +66,8 @@ async function searchFlights() {
                     ${flight.destination} (${flight.destination_code})
                 </div>
                 <div class="details">
-                    <span>🛫 ${new Date(flight.departure_time).toLocaleString()}</span>
-                    <span>🛬 ${new Date(flight.arrival_time).toLocaleString()}</span>
+                    <span>🛫 ${flight.departure_time}</span>
+                    <span>🛬 ${flight.arrival_time}</span>
                     <span>⏱ ${flight.flight_duration}</span>
                     <span>✈ ${flight.flight_number}</span>
                 </div>
@@ -77,14 +78,14 @@ async function searchFlights() {
                 </div>
                 <button class="btn-book" onclick="openBooking(${flight.id})">Выбрать</button>
             </div>
-        `).join('');
+        `}).join('');
     } catch (error) {
         console.error('Search error:', error);
         alert('Ошибка при поиске рейсов');
     }
 }
 
-// Показать все рейсы
+// Показать все рейсы (исправленная версия)
 async function showAllFlights() {
     try {
         const response = await fetch('/api/flights');
@@ -104,8 +105,8 @@ async function showAllFlights() {
                     ${flight.destination} (${flight.destination_code})
                 </div>
                 <div class="details">
-                    <span>🛫 ${new Date(flight.departure_time).toLocaleString()}</span>
-                    <span>🛬 ${new Date(flight.arrival_time).toLocaleString()}</span>
+                    <span>🛫 ${flight.departure_time}</span>
+                    <span>🛬 ${flight.arrival_time}</span>
                     <span>⏱ ${flight.flight_duration}</span>
                     <span>✈ ${flight.flight_number}</span>
                 </div>
@@ -122,7 +123,7 @@ async function showAllFlights() {
     }
 }
 
-// Открыть бронирование
+// Открыть бронирование (исправленная версия)
 function openBooking(flightId) {
     fetch(`/api/flights`)
         .then(res => res.json())
@@ -136,8 +137,8 @@ function openBooking(flightId) {
             document.getElementById('bookingModalContent').innerHTML = `
                 <h3>${selectedFlight.origin} → ${selectedFlight.destination}</h3>
                 <p><strong>Рейс:</strong> ${selectedFlight.flight_number}</p>
-                <p><strong>Вылет:</strong> ${new Date(selectedFlight.departure_time).toLocaleString()}</p>
-                <p><strong>Прилет:</strong> ${new Date(selectedFlight.arrival_time).toLocaleString()}</p>
+                <p><strong>Вылет:</strong> ${selectedFlight.departure_time}</p>
+                <p><strong>Прилет:</strong> ${selectedFlight.arrival_time}</p>
                 
                 <div class="form-group">
                     <label>Выберите тариф</label>
@@ -264,7 +265,7 @@ async function processPayment() {
     }
 }
 
-// Получить бронирование по коду
+// Получить бронирование по коду (исправленная версия)
 async function getBooking() {
     const code = document.getElementById('bookingCode').value.trim().toUpperCase();
     if (!code) {
@@ -286,7 +287,7 @@ async function getBooking() {
                 <h3>✈ Заказ #${booking.booking_code}</h3>
                 <p><strong>Рейс:</strong> ${booking.flight_number}</p>
                 <p><strong>Маршрут:</strong> ${booking.origin} → ${booking.destination}</p>
-                <p><strong>Вылет:</strong> ${new Date(booking.departure_time).toLocaleString()}</p>
+                <p><strong>Вылет:</strong> ${booking.departure_time}</p>
                 <p><strong>Тариф:</strong> ${booking.tariff} (${booking.price}₽)</p>
                 <p><strong>Пассажир:</strong> ${booking.passenger_lastname} ${booking.passenger_firstname}</p>
                 <p><strong>Дата бронирования:</strong> ${new Date(booking.booking_date).toLocaleString()}</p>
