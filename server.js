@@ -80,7 +80,17 @@ function generateBookingCode() {
 // API: Получить все рейсы
 app.get('/api/flights', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM flights ORDER BY departure_time');
+    // Форматируем время в строку без конвертации часового пояса
+    const result = await pool.query(`
+      SELECT 
+        id, flight_number, origin, origin_code, destination, destination_code,
+        TO_CHAR(departure_time, 'YYYY-MM-DD HH24:MI:SS') as departure_time,
+        TO_CHAR(arrival_time, 'YYYY-MM-DD HH24:MI:SS') as arrival_time,
+        flight_duration, start_date, end_date, days_of_week,
+        price_min, price_medium, price_max
+      FROM flights 
+      ORDER BY departure_time
+    `);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -91,7 +101,16 @@ app.get('/api/flights', async (req, res) => {
 app.get('/api/flights/search', async (req, res) => {
   const { origin, destination, date, passengers } = req.query;
   try {
-    let query = 'SELECT * FROM flights WHERE 1=1';
+    let query = `
+      SELECT 
+        id, flight_number, origin, origin_code, destination, destination_code,
+        TO_CHAR(departure_time, 'YYYY-MM-DD HH24:MI:SS') as departure_time,
+        TO_CHAR(arrival_time, 'YYYY-MM-DD HH24:MI:SS') as arrival_time,
+        flight_duration, start_date, end_date, days_of_week,
+        price_min, price_medium, price_max
+      FROM flights 
+      WHERE 1=1
+    `;
     const params = [];
     let paramIndex = 1;
     
@@ -195,9 +214,15 @@ app.get('/api/bookings/:code', async (req, res) => {
   const { code } = req.params;
   try {
     const result = await pool.query(
-      `SELECT b.*, f.* FROM bookings b 
-       JOIN flights f ON b.flight_id = f.id 
-       WHERE b.booking_code = $1`,
+      `SELECT 
+        b.*, 
+        f.flight_number, f.origin, f.origin_code, f.destination, f.destination_code,
+        TO_CHAR(f.departure_time, 'YYYY-MM-DD HH24:MI:SS') as departure_time,
+        TO_CHAR(f.arrival_time, 'YYYY-MM-DD HH24:MI:SS') as arrival_time,
+        f.flight_duration
+      FROM bookings b 
+      JOIN flights f ON b.flight_id = f.id 
+      WHERE b.booking_code = $1`,
       [code]
     );
     if (result.rows.length === 0) {
